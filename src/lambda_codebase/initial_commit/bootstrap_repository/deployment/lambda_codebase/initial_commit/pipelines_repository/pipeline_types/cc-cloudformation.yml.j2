@@ -1,6 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: ADF CloudFormation Template For CodePipeline - AWS CodeCommit Source and CloudFormation Deployment Target
 Parameters:
+  StackName:
+    Description: CloudFormation Stack Name (leave empty to generate based on project)
+    Type: String
+    Default: ''
   RepositoryName:
     Description: The Repository attached to this pipeline
     Type: String
@@ -61,6 +65,7 @@ Conditions:
   HasSchedule: !Not [!Equals [!Ref ScheduleExpression, '']]
   HasCustomBuildRole: !Not [!Equals [!Ref CustomBuildRole, '']]
   HasCustomRepository: !Not [!Equals [!Ref RepositoryName, '']]
+  HasStackName: !Not [!Equals [!Ref StackName, '']]
 Resources:
 {% if completion_trigger.get('pipelines', []) %}
   PipelineTriggerEventRule:
@@ -300,7 +305,7 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: {{ action }}
-                StackName: !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]
+                StackName: !If [HasStackName, !Ref StackName, !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]]
                 ChangeSetName: !Sub "${StackPrefix}-${ProjectName}"
 {% if contains_transform %}
                 TemplatePath: !Sub "${ProjectName}-build::template_{{ region }}.yml"
@@ -328,7 +333,7 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CHANGE_SET_REPLACE
-                StackName: !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]
+                StackName: !If [HasStackName, !Ref StackName, !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]]
                 ChangeSetName: !Sub "${StackPrefix}-${ProjectName}"
 {% if contains_transform %}
                 TemplatePath: !Sub "${ProjectName}-build::template_{{ region }}.yml"
@@ -356,7 +361,7 @@ Resources:
               Configuration:
                 ChangeSetName: !Sub "${StackPrefix}-${ProjectName}"
                 ActionMode: CHANGE_SET_EXECUTE
-                StackName: !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]
+                StackName: !If [HasStackName, !Ref StackName, !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]]
 {% if deployment_role %}
                 RoleArn: {{ 'arn:aws:iam::{0}:role/{1}'.format(stage.id, deployment_role) }}
 {% else %}
@@ -377,7 +382,7 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CHANGE_SET_REPLACE
-                StackName: !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]
+                StackName: !If [HasStackName, !Ref StackName, !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]]
                 ChangeSetName: !Sub "${StackPrefix}-${ProjectName}"
 {% if contains_transform %}
                 TemplatePath: !Sub "${ProjectName}-build::template_{{ region }}.yml"
@@ -405,7 +410,7 @@ Resources:
               Configuration:
                 ChangeSetName: !Sub "${StackPrefix}-${ProjectName}"
                 ActionMode: CHANGE_SET_EXECUTE
-                StackName: !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]
+                StackName: !If [HasStackName, !Ref StackName, !If [HasCustomRepository, !Sub "${StackPrefix}-${RepositoryName}", !Sub "${StackPrefix}-${ProjectName}"]]
 {% if deployment_role %}
                 RoleArn: {{ 'arn:aws:iam::{0}:role/{1}'.format(stage.id, deployment_role) }}
 {% else %}
